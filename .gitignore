@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Project artifacts & experiment tracking
+artifacts/
+mlruns/
+mlflow.db
+mlartifacts/
+*.joblib
+
+# Env
+.env
