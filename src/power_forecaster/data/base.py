@@ -1,6 +1,6 @@
 """Abstract data-source contract.
 
-Design note (interview-ready):
+
 We depend on an *abstraction* (``DataSource``) rather than on a concrete
 provider. This is the Dependency Inversion Principle: the training and serving
 code asks for "some source of price data" and does not care whether that data
