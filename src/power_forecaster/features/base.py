@@ -1,6 +1,6 @@
 """Composable feature-engineering transformers.
 
-Design note (interview-ready):
+
 Each transformer does *one* thing and shares the same tiny interface
 (``transform``). A :class:`FeaturePipeline` then composes them in order. This is
 the same idea as scikit-learn pipelines and the classic "Pipe and Filter"
