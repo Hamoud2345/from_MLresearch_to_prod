@@ -1,4 +1,4 @@
-"""Tests for the model layer."""
+"""Tests des modeles."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def test_forecaster_fit_predict_interval_ordering(features, name):
     model.fit(X, y)
     pred = model.predict(X)
     assert len(pred.median) == len(X)
-    # Prediction interval must be ordered: lower <= median <= upper.
+    # l'intervalle doit etre ordonne : lower <= median <= upper
     assert np.all(pred.lower <= pred.median + 1e-6)
     assert np.all(pred.median <= pred.upper + 1e-6)
 

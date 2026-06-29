@@ -1,4 +1,4 @@
-"""Forecast-accuracy and trading-performance metrics."""
+"""Metriques d'accuracy de prevision et de performance de trading."""
 
 from __future__ import annotations
 
@@ -14,25 +14,25 @@ def mae(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 def smape(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    """Symmetric MAPE in percent — robust to prices near zero."""
+    """MAPE symetrique en %, robuste aux prix proches de zero."""
     denom = (np.abs(y_true) + np.abs(y_pred)) / 2 + 1e-9
     return float(np.mean(np.abs(y_true - y_pred) / denom) * 100)
 
 
 def pinball_loss(y_true: np.ndarray, y_pred: np.ndarray, quantile: float) -> float:
-    """Quantile (pinball) loss — scores the calibration of a prediction band."""
+    """Pinball loss (quantile), mesure la calibration d'une bande de prediction."""
     diff = y_true - y_pred
     return float(np.mean(np.maximum(quantile * diff, (quantile - 1) * diff)))
 
 
 def sharpe_ratio(pnl: np.ndarray, periods_per_year: int = 24 * 365) -> float:
-    """Annualised Sharpe ratio of an hourly PnL stream."""
+    """Sharpe annualise sur un flux de PnL horaire."""
     if pnl.std() == 0:
         return 0.0
     return float(np.sqrt(periods_per_year) * pnl.mean() / pnl.std())
 
 
 def max_drawdown(cum_pnl: np.ndarray) -> float:
-    """Largest peak-to-trough drop of the cumulative PnL curve."""
+    """Plus grosse baisse pic-creux de la courbe de PnL cumule."""
     running_max = np.maximum.accumulate(cum_pnl)
     return float(np.min(cum_pnl - running_max))

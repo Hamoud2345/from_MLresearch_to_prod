@@ -1,4 +1,4 @@
-"""Model layer: forecasters behind a common interface, built via a registry."""
+"""Couche modèles : des forecasters derrière une interface commune, créés via un registry."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from .base import Forecaster, Prediction
 from .baseline import SeasonalNaiveForecaster
 from .gbm import LightGBMForecaster
 
-#: Name -> constructor. New models register here without touching call sites.
+#: nom -> constructeur. un nouveau modèle s'ajoute ici sans toucher au reste
 _REGISTRY: dict[str, Callable[..., Forecaster]] = {
     SeasonalNaiveForecaster.name: SeasonalNaiveForecaster,
     LightGBMForecaster.name: LightGBMForecaster,
@@ -17,15 +17,15 @@ _REGISTRY: dict[str, Callable[..., Forecaster]] = {
 
 
 def register_model(name: str, factory: Callable[..., Forecaster]) -> None:
-    """Add a new forecaster to the registry (extension point)."""
+    """Ajoute un forecaster au registry."""
     _REGISTRY[name] = factory
 
 
 def create_model(name: str | None = None, **kwargs) -> Forecaster:
-    """Factory: build a forecaster by registered name.
+    """Construit un forecaster à partir de son nom enregistré.
 
-    This is the Factory pattern — callers ask for ``"lightgbm"`` and get a ready
-    object, decoupled from the concrete class and its constructor signature.
+    Le code appelant demande ``"lightgbm"`` et récupère un objet prêt à l'emploi,
+    sans connaître la classe concrète ni son constructeur.
     """
     name = name or settings.model_name
     if name not in _REGISTRY:

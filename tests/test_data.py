@@ -1,4 +1,4 @@
-"""Tests for the data-access layer."""
+"""Tests de la couche d'acces aux donnees."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ def test_synthetic_source_schema_and_determinism():
     b = SyntheticDataSource(seed=7).load(30)
     assert list(a.columns) == REQUIRED_COLUMNS
     assert len(a) == 30 * 24
-    # Same seed -> identical data (reproducibility is a production guarantee).
+    # meme seed -> memes donnees
     pd.testing.assert_frame_equal(a, b)
 
 

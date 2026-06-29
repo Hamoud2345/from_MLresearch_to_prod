@@ -1,4 +1,4 @@
-"""Feature-engineering layer."""
+"""Couche de feature engineering."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from .transformers import (
 
 
 def build_default_pipeline() -> FeaturePipeline:
-    """Construct the standard feature pipeline used across the project."""
+    """Construit le pipeline de features standard du projet."""
     return FeaturePipeline(default_transformers())
 
 

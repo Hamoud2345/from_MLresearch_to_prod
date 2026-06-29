@@ -1,9 +1,8 @@
-"""Seasonal-naive baseline.
+"""Baseline saisonnier naïf.
 
-A credible ML project always ships a baseline: "the price tomorrow at hour h
-equals the price yesterday at hour h". If the fancy model cannot beat this, it
-is not worth deploying. Having the baseline behind the same interface makes the
-comparison a one-liner in the backtest.
+L'idée : le prix de demain à l'heure h = le prix d'hier à l'heure h. Ça sert de
+point de comparaison, si le vrai modèle ne bat pas ça il ne sert à rien. Comme
+il respecte la même interface, la comparaison dans le backtest est directe.
 """
 
 from __future__ import annotations
@@ -15,7 +14,7 @@ from .base import Forecaster, Prediction
 
 
 class SeasonalNaiveForecaster(Forecaster):
-    """Predict price using the value 24h earlier (``price_lag_24``)."""
+    """Prédit le prix avec la valeur d'il y a 24h (``price_lag_24``)."""
 
     name = "seasonal_naive"
 
@@ -24,12 +23,12 @@ class SeasonalNaiveForecaster(Forecaster):
         self._residual_std: float = 1.0
 
     def fit(self, X: pd.DataFrame, y: pd.Series) -> SeasonalNaiveForecaster:
-        # "Training" only calibrates the uncertainty band from in-sample errors.
+        # ici le "fit" calibre juste la largeur de la bande à partir des erreurs in-sample
         preds = X[self.lag_column].to_numpy()
         self._residual_std = float(np.nanstd(y.to_numpy() - preds)) or 1.0
         return self
 
     def predict(self, X: pd.DataFrame) -> Prediction:
         median = X[self.lag_column].to_numpy(dtype=float)
-        band = 1.2816 * self._residual_std  # ~10/90 percentile of a normal.
+        band = 1.2816 * self._residual_std  # quantiles ~10/90 d'une loi normale
         return Prediction(median=median, lower=median - band, upper=median + band)

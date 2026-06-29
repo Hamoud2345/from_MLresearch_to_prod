@@ -1,14 +1,11 @@
-"""Trading strategies that turn a price forecast into a position.
+"""Strategies de trading : transforment une prevision de prix en position.
 
+Le backtester ne sait pas comment la position est decidee, il demande juste une
+position a la strategie.
 
-A :class:`TradingStrategy` is, again, the Strategy pattern. The backtester does
-not know *how* a position is decided — it only asks the strategy for one. We can
-plug a naive directional strategy, a confidence-gated one, or anything else,
-without changing the engine.
-
-Toy market model: each hour we may go long (+1), short (-1) or flat (0) one unit
-of power versus a reference price (here the 24h-ago price, a proxy for the price
-already known when the auction closes). PnL = position * (realised - reference).
+Marche jouet : chaque heure on peut etre long (+1), short (-1) ou flat (0) sur
+une unite de power face a un prix de reference (ici le prix d'il y a 24h).
+PnL = position * (realise - reference).
 """
 
 from __future__ import annotations
@@ -21,7 +18,7 @@ from ..models.base import Prediction
 
 
 class TradingStrategy(ABC):
-    """Map a forecast and a reference price to a position in {-1, 0, +1}."""
+    """Renvoie une position dans {-1, 0, +1} a partir d'une prevision et d'un prix de reference."""
 
     name: str = "base"
 
@@ -31,10 +28,10 @@ class TradingStrategy(ABC):
 
 
 class DirectionalStrategy(TradingStrategy):
-    """Go long if the forecast is above the reference price, short otherwise.
+    """Long si la prevision est au-dessus du prix de reference, short sinon.
 
-    ``threshold`` is a dead-band (in €/MWh) avoiding trades on tiny edges that
-    transaction costs would eat.
+    ``threshold`` est une dead-band (en €/MWh) pour eviter de trader sur des
+    micro-edges que les frais mangeraient.
     """
 
     name = "directional"
@@ -49,10 +46,9 @@ class DirectionalStrategy(TradingStrategy):
 
 
 class ConfidenceGatedStrategy(TradingStrategy):
-    """Trade only when the prediction interval is tight relative to the edge.
+    """Ne trade que si l'intervalle de prediction est etroit par rapport a l'edge.
 
-    A wide band means the model is unsure, so we stand aside. This expresses how
-    a real desk uses uncertainty to size/skip trades.
+    Une bande large = modele pas sur, donc on reste flat.
     """
 
     name = "confidence_gated"

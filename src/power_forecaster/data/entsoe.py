@@ -1,14 +1,11 @@
-"""Real-data adapter for the ENTSO-E Transparency Platform.
+"""Adaptateur vers la plateforme ENTSO-E pour des données réelles.
 
-This implementation is deliberately optional: it is only importable when the
-``entsoe`` extra is installed and an API token is configured. Its mere presence
-demonstrates the value of the ``DataSource`` abstraction — production code can
-switch from synthetic to live market data by changing a single config value
-(``PPF_DATA_SOURCE=entsoe``), with no change anywhere downstream.
+Implémentation optionnelle : utilisable seulement si le paquet ``entsoe`` est
+installé et qu'un token API est configuré. On passe du synthétique à la vraie
+source en changeant juste ``PPF_DATA_SOURCE=entsoe``.
 
-The ENTSO-E platform (https://transparency.entsoe.eu) is the actual public
-source many European energy-trading desks rely on for day-ahead prices, load
-and generation.
+ENTSO-E (https://transparency.entsoe.eu) est la source publique utilisée par
+pas mal de desks énergie en Europe pour les prix day-ahead, la conso et la prod.
 """
 
 from __future__ import annotations
@@ -21,7 +18,7 @@ from .base import DataSource
 
 
 class EntsoeDataSource(DataSource):
-    """Fetch hourly day-ahead price, load and renewable generation from ENTSO-E."""
+    """Récupère prix day-ahead, conso et prod renouvelable horaires depuis ENTSO-E."""
 
     def __init__(self, country_code: str = "FR", api_token: str | None = None) -> None:
         self.country_code = country_code
@@ -33,7 +30,7 @@ class EntsoeDataSource(DataSource):
             )
 
     def _fetch(self, history_days: int) -> pd.DataFrame:  # pragma: no cover - needs network
-        from entsoe import EntsoePandasClient  # imported lazily: optional dependency
+        from entsoe import EntsoePandasClient  # import paresseux : dépendance optionnelle
 
         client = EntsoePandasClient(api_key=self.api_token)
         end = pd.Timestamp.utcnow().floor("h")

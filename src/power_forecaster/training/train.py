@@ -1,13 +1,11 @@
-"""Training pipeline with MLflow experiment tracking and model registry.
+"""Pipeline d'entrainement avec suivi MLflow et enregistrement du modele.
 
-This is the heart of the MLOps story:
-  1. Load data through the abstract DataSource.
-  2. Build features through the composable pipeline.
-  3. Backtest (walk-forward) to get honest, leakage-free metrics.
-  4. Fit the final model on the full history.
-  5. Log params, metrics, feature importances and the serialized model + a
-     reference feature sample (for drift monitoring) to MLflow, and register the
-     model under a named version so serving can always pull "the latest".
+Les etapes : on charge les donnees, on construit les features, on fait un
+backtest walk-forward pour avoir des metriques propres (sans fuite), puis on
+entraine le modele final sur tout l'historique. On logue les params, metriques,
+importances et le modele dans MLflow, plus un echantillon de reference pour le
+suivi de drift. Le modele est enregistre dans le registry avec une version pour
+que le serving recupere toujours la derniere.
 """
 
 from __future__ import annotations
@@ -29,12 +27,10 @@ from ..models.base import Forecaster
 
 
 class _ForecasterPyfunc(mlflow.pyfunc.PythonModel):
-    """Wrap our custom Forecaster so MLflow can log, version and serve it.
+    """Emballe notre Forecaster pour que MLflow puisse le loguer et le servir.
 
-    Logging through ``mlflow.pyfunc`` is the idiomatic way to register a model:
-    it captures the environment, gives the model a versioned entry in the
-    registry, and exposes a standard ``predict`` interface usable by MLflow's
-    own serving tools — not just our FastAPI app.
+    On passe par pyfunc pour avoir une version dans le registry et une interface
+    predict standard, utilisable aussi par les outils de serving de MLflow.
     """
 
     def __init__(self, model: Forecaster) -> None:
@@ -46,10 +42,10 @@ class _ForecasterPyfunc(mlflow.pyfunc.PythonModel):
 
 
 def train(model_name: str | None = None) -> dict:
-    """Run the full training + evaluation + logging pipeline.
+    """Lance tout le pipeline : entrainement, evaluation et logging.
 
-    Returns the aggregate backtest metrics so the CLI / CI can print or assert
-    on them.
+    Renvoie les metriques agregees du backtest pour que la CLI ou la CI puissent
+    les afficher ou tester dessus.
     """
     model_name = model_name or settings.model_name
     pipeline = build_default_pipeline()
@@ -70,7 +66,7 @@ def train(model_name: str | None = None) -> dict:
             }
         )
 
-        # --- Honest evaluation via walk-forward backtest --------------------
+        # evaluation via backtest walk-forward
         backtester = WalkForwardBacktester(
             pipeline=pipeline,
             train_window_days=settings.train_window_days,
@@ -81,17 +77,17 @@ def train(model_name: str | None = None) -> dict:
         agg = report.aggregate()
         mlflow.log_metrics(agg)
 
-        # --- Fit the production model on the full available history ---------
+        # modele de prod entraine sur tout l'historique dispo
         features = pipeline.transform(raw).dropna().reset_index(drop=True)
         feature_cols = [c for c in features.columns if c not in {"timestamp", TARGET}]
         model = create_model(model_name, **_model_kwargs(model_name))
         model.fit(features[feature_cols], features[TARGET])
 
-        # Persist locally for the API, and to MLflow for lineage/rollback.
+        # sauvegarde locale pour l'API, et dans MLflow pour le suivi / rollback
         settings.model_path().parent.mkdir(parents=True, exist_ok=True)
         model.save(settings.model_path())
 
-        # Reference sample of the target — used by the API to detect drift.
+        # echantillon de reference de la cible, sert a l'API pour detecter le drift
         reference_path = settings.artifacts_dir / "reference.json"
         reference_path.write_text(
             json.dumps({"price": features[TARGET].tail(24 * 30).round(3).tolist()})
@@ -104,7 +100,7 @@ def train(model_name: str | None = None) -> dict:
         mlflow.log_dict({"folds": [asdict(f) | _stringify_ts(f) for f in report.folds]},
                         "backtest_folds.json")
 
-        # Log + register the model as an MLflow pyfunc (versioned in the registry).
+        # log + enregistrement du modele en pyfunc (versionne dans le registry)
         signature = mlflow.models.infer_signature(
             features[feature_cols].head(),
             _ForecasterPyfunc(model).predict(None, features[feature_cols].head()),
@@ -128,7 +124,7 @@ def _stringify_ts(fold) -> dict:
 
 
 def _register(model: Forecaster, signature, input_example) -> None:
-    """Log the model as a pyfunc and register a new version in the registry."""
+    """Logue le modele en pyfunc et enregistre une nouvelle version dans le registry."""
     try:
         mlflow.pyfunc.log_model(
             name="model",
@@ -137,7 +133,7 @@ def _register(model: Forecaster, signature, input_example) -> None:
             input_example=input_example,
             registered_model_name=settings.registered_model_name,
         )
-    except Exception as exc:  # registry is optional in some backends
+    except Exception as exc:  # le registry n'est pas dispo sur tous les backends
         print(f"[mlflow] model registry skipped: {exc}")
 
 

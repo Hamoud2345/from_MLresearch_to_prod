@@ -1,12 +1,9 @@
-"""Abstract forecaster contract.
+"""Interface commune des modèles de prévision.
 
-Design note (interview-ready):
-Every model — a trivial baseline or a tuned gradient-boosting machine — hides
-behind the same :class:`Forecaster` interface (``fit`` / ``predict`` /
-``save`` / ``load``). The backtester, the training script and the API all speak
-to this interface only. That is the Strategy pattern: algorithms are
-interchangeable behind a common contract, so we can compare or swap models
-without touching the surrounding system.
+Tous les modèles (du baseline tout bête au gradient boosting) exposent la même
+interface Forecaster : fit / predict / save / load. Du coup le backtest, le
+script d'entraînement et l'API ne dépendent que de ça, on peut comparer ou
+remplacer un modèle sans rien casser ailleurs.
 """
 
 from __future__ import annotations
@@ -22,10 +19,10 @@ import pandas as pd
 
 @dataclass
 class Prediction:
-    """A probabilistic forecast: central estimate plus a lower/upper band.
+    """Prévision probabiliste : estimation centrale + borne basse/haute.
 
-    The interval matters for trading: a desk sizes positions by how *confident*
-    the model is, not only by the point forecast.
+    L'intervalle sert pour le trading, on dimensionne les positions selon la
+    confiance du modèle et pas juste selon la valeur centrale.
     """
 
     median: np.ndarray
@@ -35,9 +32,9 @@ class Prediction:
 
 
 class Forecaster(ABC):
-    """Common interface for all price-forecasting models."""
+    """Interface commune à tous les modèles de prévision de prix."""
 
-    #: Human-readable identifier, set by subclasses.
+    #: nom lisible, défini par les sous-classes
     name: str = "base"
 
     @abstractmethod
@@ -49,7 +46,7 @@ class Forecaster(ABC):
         raise NotImplementedError
 
     def save(self, path: Path) -> None:
-        """Persist the fitted model (joblib by default)."""
+        """Sauvegarde le modèle entraîné (joblib)."""
         path.parent.mkdir(parents=True, exist_ok=True)
         joblib.dump(self, path)
 

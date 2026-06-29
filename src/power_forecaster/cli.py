@@ -1,9 +1,9 @@
-"""Command-line interface — the single entry point for the whole pipeline.
+"""Interface en ligne de commande, point d'entree unique du pipeline.
 
-    ppf train                 # train + backtest + log to MLflow
-    ppf backtest --model ...  # compare a model against the baseline
-    ppf serve                 # launch the prediction API
-    ppf sample-request        # print a ready-to-use /predict payload
+    ppf train                 # train + backtest + log MLflow
+    ppf backtest --model ...  # compare un modele a la baseline
+    ppf serve                 # lance l'API de prediction
+    ppf sample-request        # affiche un payload /predict pret a l'emploi
 """
 
 from __future__ import annotations
@@ -19,12 +19,12 @@ from .data import get_data_source
 from .features import build_default_pipeline
 from .models import available_models, create_model
 
-app = typer.Typer(add_completion=False, help="Day-ahead power price forecaster (MLOps demo).")
+app = typer.Typer(add_completion=False, help="Prevision des prix day-ahead (demo MLOps).")
 
 
 @app.command()
-def train(model: str = typer.Option(settings.model_name, help="Model name to train.")) -> None:
-    """Train the model, run a walk-forward backtest and log everything to MLflow."""
+def train(model: str = typer.Option(settings.model_name, help="Modele a entrainer.")) -> None:
+    """Entraine le modele, lance un backtest walk-forward et log le tout dans MLflow."""
     from .training import train as run_training
 
     metrics = run_training(model)
@@ -33,10 +33,10 @@ def train(model: str = typer.Option(settings.model_name, help="Model name to tra
 
 @app.command()
 def backtest(
-    model: str = typer.Option(settings.model_name, help="Model to evaluate."),
-    compare_baseline: bool = typer.Option(True, help="Also backtest the seasonal-naive baseline."),
+    model: str = typer.Option(settings.model_name, help="Modele a evaluer."),
+    compare_baseline: bool = typer.Option(True, help="Backtest aussi la baseline seasonal-naive."),
 ) -> None:
-    """Backtest one or more models and print accuracy + trading metrics."""
+    """Backtest un ou plusieurs modeles et affiche accuracy + metriques de trading."""
     pipeline = build_default_pipeline()
     source = get_data_source(settings.data_source, seed=settings.random_seed)
     raw = source.load(settings.history_days)
@@ -57,7 +57,7 @@ def backtest(
 
 @app.command()
 def models() -> None:
-    """List the registered forecasting models."""
+    """Liste les modeles de prevision enregistres."""
     typer.echo("\n".join(available_models()))
 
 
@@ -67,7 +67,7 @@ def serve(
     port: int = 8000,
     reload: bool = False,
 ) -> None:
-    """Launch the FastAPI prediction service with uvicorn."""
+    """Lance le service de prediction FastAPI avec uvicorn."""
     import uvicorn
 
     uvicorn.run("power_forecaster.serving.api:app", host=host, port=port, reload=reload)
@@ -75,7 +75,7 @@ def serve(
 
 @app.command("sample-request")
 def sample_request(hours: int = 24) -> None:
-    """Print a valid /predict payload built from synthetic data (for demos/tests)."""
+    """Affiche un payload /predict valide, construit sur des donnees synthetiques."""
     raw = get_data_source("synthetic", seed=settings.random_seed).load(40)
     pipeline = build_default_pipeline()
     feats = pipeline.transform(raw).dropna().tail(hours)

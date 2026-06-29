@@ -1,12 +1,8 @@
-"""Abstract data-source contract.
+"""Interface commune des sources de données.
 
-
-We depend on an *abstraction* (``DataSource``) rather than on a concrete
-provider. This is the Dependency Inversion Principle: the training and serving
-code asks for "some source of price data" and does not care whether that data
-comes from a synthetic generator (offline, deterministic, great for CI) or from
-the real ENTSO-E API. Swapping one for the other is a one-line change and needs
-zero modification to the rest of the pipeline.
+Le reste du code dépend de l'abstraction ``DataSource`` et pas d'un fournisseur
+précis, ce qui permet de basculer du générateur synthétique à l'API ENTSO-E sans
+toucher au pipeline.
 """
 
 from __future__ import annotations
@@ -15,25 +11,24 @@ from abc import ABC, abstractmethod
 
 import pandas as pd
 
-#: Canonical schema every DataSource must return.
+# colonnes attendues en sortie de toute source
 REQUIRED_COLUMNS = ["timestamp", "price", "load", "wind", "solar"]
 
 
 class DataSource(ABC):
-    """A provider of hourly day-ahead market data.
+    """Source de données horaires du marché day-ahead.
 
-    Concrete implementations only need to fill :meth:`_fetch`. The public
-    :meth:`load` method validates the schema so the rest of the system can trust
-    its input — a small but important production guarantee.
+    Les implémentations n'ont qu'à remplir :meth:`_fetch`. C'est ``load`` qui
+    valide le schéma, comme ça le reste du code peut faire confiance aux données.
     """
 
     @abstractmethod
     def _fetch(self, history_days: int) -> pd.DataFrame:
-        """Return raw hourly data with at least :data:`REQUIRED_COLUMNS`."""
+        """Renvoie les données horaires brutes, avec au moins REQUIRED_COLUMNS."""
         raise NotImplementedError
 
     def load(self, history_days: int) -> pd.DataFrame:
-        """Fetch, validate and normalise the data frame."""
+        """Récupère, valide et normalise le DataFrame."""
         df = self._fetch(history_days)
         missing = set(REQUIRED_COLUMNS) - set(df.columns)
         if missing:
@@ -44,3 +39,4 @@ class DataSource(ABC):
         if df["timestamp"].duplicated().any():
             raise ValueError("Duplicate timestamps detected in data source.")
         return df
+

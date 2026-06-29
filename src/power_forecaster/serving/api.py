@@ -1,11 +1,9 @@
-"""FastAPI application serving day-ahead price forecasts.
+"""Application FastAPI qui sert les previsions de prix day-ahead.
 
-Production features baked in:
-  - ``/health`` and ``/ready`` probes for orchestrators (Docker/K8s).
-  - ``/predict`` with validated Pydantic I/O and prediction intervals.
-  - ``/metrics`` exposing Prometheus counters/histograms for monitoring.
-  - Inline data-drift check (PSI) on every request, surfaced in the response
-    and as a metric, so a shifting market regime is observable, not silent.
+Ce qu'on expose : les probes /health et /ready pour l'orchestrateur, /predict
+avec entrees/sorties validees par Pydantic et intervalles de prediction,
+/metrics pour Prometheus, et un check de drift (PSI) a chaque requete, renvoye
+dans la reponse et en metrique pour reperer un changement de regime du marche.
 """
 
 from __future__ import annotations
@@ -28,38 +26,39 @@ from .schemas import (
 app = FastAPI(
     title="Day-Ahead Power Price Forecaster",
     version="0.1.0",
-    description="Forecast hourly day-ahead electricity prices with uncertainty bands.",
+    description="Prevision horaire des prix day-ahead avec intervalles d'incertitude.",
 )
 
-# --- Prometheus metrics ----------------------------------------------------
-PREDICTION_COUNT = Counter("ppf_predictions_total", "Number of forecasted hours.")
-REQUEST_LATENCY = Histogram("ppf_request_latency_seconds", "Prediction request latency.")
-DRIFT_GAUGE = Histogram("ppf_drift_psi", "Population Stability Index per request.")
+# metriques Prometheus
+PREDICTION_COUNT = Counter("ppf_predictions_total", "Nombre d'heures prévues.")
+REQUEST_LATENCY = Histogram("ppf_request_latency_seconds", "Latence des requêtes de prédiction.")
+DRIFT_GAUGE = Histogram("ppf_drift_psi", "PSI (Population Stability Index) par requête.")
 
-app.mount("/metrics", make_asgi_app())  # exposes Prometheus scrape endpoint.
+app.mount("/metrics", make_asgi_app())  # endpoint de scrape Prometheus
 
 predictor = Predictor()
+_NOT_TRAINED = "Modele pas encore entraine. Lance d'abord l'entrainement."
 
 
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
-    """Liveness probe: the process is up."""
+    """Liveness probe : le process tourne."""
     return HealthResponse(status="ok", model_loaded=predictor.is_ready())
 
 
 @app.get("/ready", response_model=HealthResponse)
 def ready() -> HealthResponse:
-    """Readiness probe: the model artifact is present and loadable."""
+    """Readiness probe : le modele est present et chargeable."""
     if not predictor.is_ready():
-        raise HTTPException(status_code=503, detail="Model not trained yet. Run training first.")
+        raise HTTPException(status_code=503, detail=_NOT_TRAINED)
     return HealthResponse(status="ready", model_loaded=True, model_name=predictor.model_name)
 
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(request: PredictRequest) -> PredictResponse:
-    """Forecast day-ahead prices for the supplied hours."""
+    """Prevoit les prix day-ahead pour les heures fournies."""
     if not predictor.is_ready():
-        raise HTTPException(status_code=503, detail="Model not trained yet. Run training first.")
+        raise HTTPException(status_code=503, detail=_NOT_TRAINED)
 
     start = time.perf_counter()
     observations = [obs.model_dump() for obs in request.observations]
@@ -77,7 +76,7 @@ def predict(request: PredictRequest) -> PredictResponse:
         )
     ]
 
-    # --- Drift check: compare request prices to the training reference ------
+    # drift : on compare les prix de la requete a la reference d'entrainement
     psi = 0.0
     reference = predictor.reference_prices
     if reference is not None and len(observations) >= 5:

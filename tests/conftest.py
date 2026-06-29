@@ -1,4 +1,4 @@
-"""Shared pytest fixtures."""
+"""Fixtures partagees."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Backtesting layer: walk-forward evaluation and trading strategies."""
+"""Couche de backtest : evaluation walk-forward et strategies de trading."""
 
 from __future__ import annotations
 

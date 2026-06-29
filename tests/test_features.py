@@ -1,4 +1,4 @@
-"""Tests for the feature-engineering layer."""
+"""Tests du feature engineering."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def test_pipeline_adds_expected_features(raw_data):
 
 def test_lag_feature_has_no_lookahead(raw_data):
     out = LagFeatures(lags=(24,)).transform(raw_data)
-    # The lag column at row i must equal the price 24 rows earlier.
+    # le lag a la ligne i doit valoir le prix 24 lignes avant
     np.testing.assert_allclose(
         out["price_lag_24"].iloc[24:].to_numpy(),
         raw_data["price"].iloc[:-24].to_numpy(),

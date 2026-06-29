@@ -1,10 +1,10 @@
-"""LightGBM gradient-boosting forecaster with quantile prediction bands.
+"""Modèle de prévision LightGBM (gradient boosting) avec bandes par quantile.
 
-Gradient boosting is the workhorse for tabular price forecasting: it captures
-non-linear interactions (e.g. price explodes only when residual load is high AND
-wind is low) without manual feature crossing. We fit three models — one per
-quantile — so the output is a full prediction interval rather than a single
-number, which is what a risk-aware trading desk needs.
+Le gradient boosting marche bien sur ce genre de données tabulaires : il attrape
+les interactions non linéaires (genre le prix explose seulement quand la charge
+résiduelle est haute ET le vent faible) sans qu'on ait à croiser les features à
+la main. On entraîne trois modèles, un par quantile, pour sortir un intervalle
+complet et pas juste un point.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from .base import Forecaster, Prediction
 
 
 class LightGBMForecaster(Forecaster):
-    """Quantile gradient boosting (lower / median / upper)."""
+    """Gradient boosting par quantile (lower / median / upper)."""
 
     name = "lightgbm"
 
@@ -54,7 +54,7 @@ class LightGBMForecaster(Forecaster):
             raise RuntimeError("Model is not fitted. Call fit() first.")
         X = X[self.feature_names_]
         lo, med, hi = self.quantiles
-        # Sort columns to guarantee lower <= median <= upper (quantile crossing).
+        # on trie pour garantir lower <= median <= upper (problème de quantile crossing)
         preds = np.vstack([self._models[q].predict(X) for q in self.quantiles])
         preds = np.sort(preds, axis=0)
         return Prediction(
@@ -65,7 +65,7 @@ class LightGBMForecaster(Forecaster):
         )
 
     def feature_importance(self) -> dict[str, float]:
-        """Average gain importance across the quantile models (for monitoring)."""
+        """Importance (gain) moyennée sur les modèles quantile, pour le monitoring."""
         if not self._models:
             return {}
         importances = np.mean(

@@ -1,12 +1,8 @@
-"""Composable feature-engineering transformers.
+"""Transformers de feature engineering, composables.
 
-
-Each transformer does *one* thing and shares the same tiny interface
-(``transform``). A :class:`FeaturePipeline` then composes them in order. This is
-the same idea as scikit-learn pipelines and the classic "Pipe and Filter"
-pattern: small, independently testable units assembled into a bigger one.
-Adding a new feature = writing one class, no edits to existing code
-(Open/Closed Principle).
+Chaque transformer fait une seule chose et partage la même interface
+(``transform``), et ``FeaturePipeline`` les enchaîne dans l'ordre. Ajouter une
+feature revient à écrire une classe, sans toucher au reste.
 """
 
 from __future__ import annotations
@@ -19,11 +15,11 @@ TARGET = "price"
 
 
 class FeatureTransformer(ABC):
-    """Stateless transformation from a data frame to an augmented data frame."""
+    """Transformation sans état : prend un DataFrame, le renvoie enrichi."""
 
     @abstractmethod
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Return ``df`` with new feature columns added."""
+        """Renvoie ``df`` avec les nouvelles colonnes de features."""
         raise NotImplementedError
 
     @property
@@ -32,7 +28,7 @@ class FeatureTransformer(ABC):
 
 
 class FeaturePipeline:
-    """Apply an ordered list of :class:`FeatureTransformer` objects."""
+    """Applique une liste ordonnée de FeatureTransformer."""
 
     def __init__(self, transformers: list[FeatureTransformer]) -> None:
         self.transformers = transformers
@@ -44,7 +40,7 @@ class FeaturePipeline:
         return out
 
     def feature_names(self, df: pd.DataFrame) -> list[str]:
-        """Column names produced by the pipeline, excluding raw/target columns."""
+        """Colonnes produites par le pipeline, hors colonnes brutes et target."""
         transformed = self.transform(df)
         excluded = {"timestamp", TARGET}
         return [c for c in transformed.columns if c not in excluded]

@@ -1,4 +1,4 @@
-"""Concrete feature transformers for day-ahead price forecasting."""
+"""Transformers concrets pour la prévision des prix day-ahead."""
 
 from __future__ import annotations
 
@@ -9,10 +9,10 @@ from .base import TARGET, FeatureTransformer
 
 
 class CalendarFeatures(FeatureTransformer):
-    """Cyclical calendar encodings — capture daily/weekly/yearly seasonality.
+    """Encodages calendaires cycliques pour la saisonnalité jour/semaine/année.
 
-    Hour and day-of-week are encoded as sine/cosine pairs so the model sees that
-    hour 23 is adjacent to hour 0 (a plain integer would not express that).
+    L'heure et le jour de la semaine sont encodés en sin/cos pour que le modèle
+    voie que 23h est juste à côté de 0h (un entier brut ne le dirait pas).
     """
 
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -28,11 +28,10 @@ class CalendarFeatures(FeatureTransformer):
 
 
 class LagFeatures(FeatureTransformer):
-    """Past price values. The day-ahead price is strongly autocorrelated.
+    """Prix passés. Le prix day-ahead est fortement autocorrélé.
 
-    We use lags of 24h, 48h and 168h (one week) — the prices a trader would
-    naturally look back to. Only *past* information is used, so there is no
-    look-ahead leakage.
+    Lags de 24h, 48h et 168h (une semaine). On n'utilise que du passé, donc pas
+    de fuite d'info future.
     """
 
     def __init__(self, lags: tuple[int, ...] = (24, 48, 168)) -> None:
@@ -46,14 +45,14 @@ class LagFeatures(FeatureTransformer):
 
 
 class RollingFeatures(FeatureTransformer):
-    """Rolling statistics of past prices (trend & local volatility)."""
+    """Statistiques rolling des prix passés (tendance et volatilité locale)."""
 
     def __init__(self, windows: tuple[int, ...] = (24, 168)) -> None:
         self.windows = windows
 
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
         out = df.copy()
-        # shift(1) guarantees the window contains only strictly-past observations.
+        # shift(1) pour que la fenêtre ne contienne que du strictement passé
         past = out[TARGET].shift(1)
         for w in self.windows:
             out[f"price_rollmean_{w}"] = past.rolling(w).mean()
@@ -62,11 +61,11 @@ class RollingFeatures(FeatureTransformer):
 
 
 class FundamentalFeatures(FeatureTransformer):
-    """Market fundamentals: load and renewable generation drive the merit order.
+    """Fondamentaux marché : conso et prod renouvelable pilotent le merit order.
 
-    In real desks the day-ahead forecast uses *forecast* load/wind/solar (known
-    before the auction). Here we use the realised values as a stand-in, which is
-    a documented simplification.
+    En vrai on utiliserait les prévisions de load/wind/solar (connues avant
+    l'enchère). Ici on prend les valeurs réalisées à la place, c'est une
+    simplification assumée.
     """
 
     def transform(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -77,7 +76,7 @@ class FundamentalFeatures(FeatureTransformer):
 
 
 def default_transformers() -> list[FeatureTransformer]:
-    """The standard feature set used in training and serving."""
+    """Jeu de features standard utilisé en training et en serving."""
     return [
         CalendarFeatures(),
         FundamentalFeatures(),

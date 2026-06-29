@@ -1,10 +1,10 @@
-"""Model holder used by the API: loads the model once and builds serving features.
+"""Conteneur du modele cote API : charge le modele une fois et construit les features.
 
-At serving time we receive point-in-time market context (load, renewables and a
-few price lags) rather than a full history, so rolling-window statistics are
-approximated from the supplied lags. The builder always emits exactly the
-columns the model was trained on (``feature_names_``), so the contract between
-training and serving cannot silently drift.
+Au serving on recoit un contexte marche ponctuel (consommation, renouvelables et
+quelques lags de prix) et pas tout l'historique, donc les stats rolling sont
+approximees a partir des lags fournis. Le builder renvoie toujours exactement les
+colonnes vues a l'entrainement (``feature_names_``), comme ca le contrat
+entrainement/serving ne peut pas deriver en silence.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from ..models.base import Forecaster, Prediction
 
 
 class Predictor:
-    """Lazy-loaded singleton-style wrapper around the production model."""
+    """Wrapper autour du modele de prod, charge en lazy facon singleton."""
 
     def __init__(self) -> None:
         self._model: Forecaster | None = None
@@ -49,14 +49,14 @@ class Predictor:
         return settings.model_path().exists()
 
     def build_features(self, observations: list[dict]) -> pd.DataFrame:
-        """Reconstruct the model's feature columns from API observations."""
+        """Reconstruit les colonnes de features du modele a partir des observations de l'API."""
         df = pd.DataFrame(observations)
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
 
         df = CalendarFeatures().transform(df)
         df = FundamentalFeatures().transform(df)
 
-        # Approximate rolling stats from the available lags (documented proxy).
+        # stats rolling approximees depuis les lags dispo (proxy assume)
         lags = df[["price_lag_24", "price_lag_48", "price_lag_168"]]
         df["price_rollmean_24"] = lags.mean(axis=1)
         df["price_rollmean_168"] = lags.mean(axis=1)

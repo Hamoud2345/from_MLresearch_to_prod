@@ -1,4 +1,4 @@
-"""Tests for the backtest engine, strategies and metrics."""
+"""Tests du backtest : moteur, strategies et metriques."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ def test_directional_strategy_signs():
     )
     reference = np.array([8.0, 8.0, 7.0])
     pos = DirectionalStrategy(threshold=1.0).positions(forecast, reference)
-    assert pos.tolist() == [1.0, -1.0, 0.0]  # long, short, flat (within dead-band).
+    assert pos.tolist() == [1.0, -1.0, 0.0]  # long, short, flat (dans la dead-band)
 
 
 def test_walkforward_runs_and_reports(raw_data):

@@ -1,10 +1,7 @@
-"""Walk-forward backtesting engine.
+"""Moteur de backtest walk-forward.
 
-Why walk-forward and not a random split?
-Time series must be evaluated chronologically: we train on the past and test on
-the *future*, then roll the window forward. A random train/test split would leak
-future information into training and produce dishonest metrics. Walk-forward is
-the honest way to estimate how the model would have performed live.
+On entraine sur le passe et on teste sur le futur, puis on fait glisser la
+fenetre. Un split aleatoire ferait fuiter des infos du futur dans le train.
 """
 
 from __future__ import annotations
@@ -39,7 +36,7 @@ class BacktestReport:
     cum_pnl: np.ndarray
 
     def aggregate(self) -> dict[str, float]:
-        """Average accuracy and summed/annualised trading metrics across folds."""
+        # moyenne des metriques d'accuracy, somme/annualisation pour le trading
         if not self.folds:
             return {}
         return {
@@ -54,12 +51,11 @@ class BacktestReport:
 
 
 class WalkForwardBacktester:
-    """Roll a fixed train/test window through history, scoring each fold.
+    """Fait glisser une fenetre train/test sur l'historique et score chaque fold.
 
-    The engine is model- and strategy-agnostic: it receives a model *factory*
-    (so each fold trains a fresh model) and a :class:`TradingStrategy`. That
-    decoupling is what lets us benchmark any model against any strategy with the
-    same code.
+    On passe une factory de modele (chaque fold reentraine un modele neuf) et une
+    strategie, ce qui permet de tester n'importe quel modele avec n'importe quelle
+    strategie sans toucher au moteur.
     """
 
     def __init__(

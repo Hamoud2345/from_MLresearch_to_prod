@@ -1,8 +1,7 @@
-"""End-to-end tests for the FastAPI serving layer.
+"""Tests end-to-end de l'API FastAPI.
 
-We train a tiny model into a temporary artifacts dir, then exercise the API with
-FastAPI's TestClient — covering the full path request -> features -> model ->
-response, including the drift field.
+On entraine un petit modele dans un dossier temporaire puis on tape l'API
+via le TestClient (request -> features -> model -> response, drift compris).
 """
 
 from __future__ import annotations
@@ -20,7 +19,7 @@ from power_forecaster.models import create_model
 
 @pytest.fixture(scope="module")
 def client(tmp_path_factory, raw_data):
-    # Redirect artifacts to a temp dir and train a small production model.
+    # artifacts dans un dossier temp + petit modele entraine
     settings.artifacts_dir = tmp_path_factory.mktemp("artifacts")
     feats = build_default_pipeline().transform(raw_data).dropna().reset_index(drop=True)
     cols = [c for c in feats.columns if c not in {"timestamp", TARGET}]
@@ -32,7 +31,7 @@ def client(tmp_path_factory, raw_data):
 
     from power_forecaster.serving.api import app, predictor
 
-    predictor._model = None  # force reload from the temp artifact.
+    predictor._model = None  # force le rechargement depuis l'artifact temp
     predictor._reference = None
     return TestClient(app), feats
 
