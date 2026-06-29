@@ -1,6 +1,6 @@
 """Trading strategies that turn a price forecast into a position.
 
-Design note (interview-ready):
+
 A :class:`TradingStrategy` is, again, the Strategy pattern. The backtester does
 not know *how* a position is decided — it only asks the strategy for one. We can
 plug a naive directional strategy, a confidence-gated one, or anything else,
