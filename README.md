@@ -4,6 +4,10 @@
 
 Ce projet n'est pas un notebook : c'est un **modèle ML packagé comme un vrai logiciel de production**. Il est pensé pour le métier des équipes de *trading / Global Energy Management* (prévoir le prix du lendemain, prendre une position, mesurer le PnL et le risque).
 
+![Prévision vs réel](assets/forecast_vs_actual.png)
+
+> Prévision LightGBM (orange) vs prix réel (noir) sur une semaine *hors échantillon*, avec son intervalle de confiance à 80 % — la bande exprime le **risque**, ce qu'un desk de trading regarde avant de prendre une position.
+
 ---
 
 ## 🎯 Ce que le projet démontre
@@ -22,6 +26,23 @@ Ce projet n'est pas un notebook : c'est un **modèle ML packagé comme un vrai l
 ## 🏗️ Architecture
 
 Le code est organisé en **couches découplées**. Chaque couche dépend d'une *abstraction*, pas d'une implémentation concrète — c'est ce qui rend le système testable et évolutif.
+
+```mermaid
+flowchart LR
+    subgraph Sources["Couche données (abstraite)"]
+        S1[SyntheticDataSource]
+        S2[EntsoeDataSource]
+    end
+    S1 & S2 -->|DataSource| FE[FeaturePipeline<br/>transformers composables]
+    FE --> M{{"Forecaster (ABC)<br/>baseline / LightGBM"}}
+    M --> BT[WalkForwardBacktester<br/>+ TradingStrategy]
+    M --> TR[Training pipeline]
+    TR -->|log + register| ML[(MLflow<br/>tracking & registry)]
+    TR -->|model.joblib + reference| ART[(artifacts)]
+    ART --> API[FastAPI /predict<br/>+ intervalles + drift PSI]
+    API --> PROM[(Prometheus /metrics)]
+    BT --> REP[PnL · Sharpe · RMSE]
+```
 
 ```
 src/power_forecaster/
@@ -96,6 +117,23 @@ docker compose up --build
 # API     → http://localhost:8000/docs
 # MLflow  → http://localhost:5000
 ```
+
+---
+
+## 📈 Résultats du backtest
+
+Évaluation **walk-forward** (chronologique, sans fuite), LightGBM vs baseline seasonal-naive sur données synthétiques :
+
+| Modèle | RMSE (€/MWh) | sMAPE | PnL total | Sharpe |
+|---|---|---|---|---|
+| **LightGBM** | **≈ 4.5** | **≈ 5 %** | **positif** | **élevé** |
+| Seasonal-naive (baseline) | ≈ 10.8 | ≈ 14 % | ≈ 0 | 0 |
+
+> La baseline ne génère aucun PnL : sa prévision **égale** le prix de référence, donc la stratégie ne voit aucun *edge* — ce qui illustre concrètement pourquoi un vrai modèle apporte de la valeur.
+
+![Courbe de PnL cumulée](assets/backtest_pnl.png)
+
+Régénérer les figures : `python scripts/plot_backtest.py`
 
 ---
 
